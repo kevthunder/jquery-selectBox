@@ -37,6 +37,22 @@
 	border-bottom-right-radius: 0;
 }
 
+
+.selectBox-dropdown.selectBox-menuShowing-invert {
+	-moz-border-radius-topleft: 0;
+	-moz-border-radius-topright: 0;
+	-webkit-border-top-left-radius: 0;
+	-webkit-border-top-right-radius: 0;
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+	-moz-border-radius-bottomleft: 4px;
+	-moz-border-radius-bottomright: 4px;
+	-webkit-border-bottom-left-radius: 4px;
+	-webkit-border-bottom-right-radius: 4px;
+	border-bottom-left-radius: 4px;
+	border-bottom-right-radius: 4px;
+}
+
 .selectBox-dropdown .selectBox-label {
 	padding: 2px 8px;
 	display: inline-block;
@@ -129,6 +145,31 @@
 	white-space: nowrap;
 }
 
+.selectBox-options .selectBox-optgroup ul{
+	background: none repeat scroll 0 0 #ffffff;
+	margin:0;
+	padding:0;
+}
+.selectBox-options .selectBox-drawer-closed  span{
+	display:block;
+	background: url('jquery.selectBox-closed.gif') no-repeat 2px center;
+	margin:0;
+	padding:0 0 0 13px;
+}
+.selectBox-options .selectBox-drawer-opened  span{
+	display:block;
+	background: url('jquery.selectBox-opened.gif') no-repeat left center;
+	margin:0;
+	padding:0 0 0 13px;
+}
+.selectBox-options .selectBox-optgroup ul li{
+	margin:0;
+	padding:0;
+}
+.selectBox-options .selectBox-optgroup ul li a{
+	margin:0;
+	padding:0;
+}
 
 /* Disabled state */
 .selectBox.selectBox-disabled {

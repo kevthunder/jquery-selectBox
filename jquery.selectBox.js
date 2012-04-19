@@ -79,7 +79,7 @@ if(jQuery) (function($) {
 					//
 					// Inline controls
 					//
-					options = getOptions(select, 'inline');
+					options = getOptions(select, 'inline', settings);
 
 					control
 						.append(options)
@@ -135,7 +135,7 @@ if(jQuery) (function($) {
 						.attr('class', getLabelClass(select))
 						.text(getLabelText(select));
 					
-					options = getOptions(select, 'dropdown');
+					options = getOptions(select, 'dropdown', settings);
 					options.appendTo('BODY');
 
 					control
@@ -187,11 +187,11 @@ if(jQuery) (function($) {
 			};
 
 
-			var getOptions = function(select, type) {
+			var getOptions = function(select, type, settings) {
 				var options;
 
 				// Private function to handle recursion in the getOptions function.
-				var _getOptions = function(select, options) {
+				var _getOptions = function(select, options, settings) {
 					// Loop through the set in order of element children.
 					select.children('OPTION, OPTGROUP').each( function() {
 						// If the element is an option, add it to the list.
@@ -209,9 +209,21 @@ if(jQuery) (function($) {
 						else {
 							// If the element is an option group, add the group and call this function on it.
 							var optgroup = $('<li class="selectBox-optgroup" />');
-							optgroup.text($(this).attr('label'));
-							options.append(optgroup);
-							options = _getOptions($(this), options);
+							if(settings.drawers){
+								var $span = $(document.createElement('span'));
+								$span.text($(this).attr('label'));
+								optgroup.append($span);
+								var $ul = $(document.createElement('ul'));
+								$ul = _getOptions($(this), $ul, settings);
+								optgroup.addClass('selectBox-drawer-closed');
+								$ul.hide();
+								optgroup.append($ul);
+								options.append(optgroup);
+							}else{
+								optgroup.text($(this).attr('label'));
+								options.append(optgroup);
+								options = _getOptions($(this), options, settings);
+							}
 						}
 					});
 					// Return the built strin
@@ -223,7 +235,7 @@ if(jQuery) (function($) {
 					case 'inline':
 
 						options = $('<ul class="selectBox-options" />');
-						options = _getOptions(select, options);
+						options = _getOptions(select, options, settings);
 						
 						options
 							.find('A')
@@ -241,6 +253,12 @@ if(jQuery) (function($) {
 									hideMenus();
 									selectOption(select, $(this).parent(), event);
 								});
+										
+						options
+							.find('.selectBox-optgroup>span')
+								.bind('click.selectBox', function(event) {
+									toggleDrawer(select, $(this).parent());
+								})
 
 						disableSelection(options);
 
@@ -248,7 +266,7 @@ if(jQuery) (function($) {
 
 					case 'dropdown':
 						options = $('<ul class="selectBox-dropdown-menu selectBox-options" />');
-						options = _getOptions(select, options);
+						options = _getOptions(select, options, settings);
 
 						options
 							.data('selectBox-select', select)
@@ -276,7 +294,13 @@ if(jQuery) (function($) {
 								.bind('mouseout.selectBox', function(event) {
 									removeHover(select, $(this).parent());
 								});
-						
+								
+						options
+							.find('.selectBox-optgroup>span')
+								.bind('click.selectBox', function(event) {
+									toggleDrawer(select, $(this).parent());
+								})
+								
 						// Inherit classes for dropdown menu
 						var classes = select.attr('class') || '';
 						if( classes !== '' ) {
@@ -350,10 +374,18 @@ if(jQuery) (function($) {
 				var borderBottomWidth = isNaN(control.css('borderBottomWidth')) ? 0 : parseInt(control.css('borderBottomWidth'));
 				
 				// Menu position
+				var invert = false;
+				var top = control.offset().top + control.outerHeight() - borderBottomWidth;
+				var maxTop = $(window).height()+$(window).scrollTop()-options.outerHeight();
+				if(top>maxTop){
+					top = control.offset().top - options.outerHeight() - borderBottomWidth;
+					invert = true;
+				}
+				
 				options
 					.width(control.innerWidth())
 					.css({
-						top: control.offset().top + control.outerHeight() - borderBottomWidth,
+						top: top,
 						left: control.offset().left
 					});
 				
@@ -387,6 +419,9 @@ if(jQuery) (function($) {
 				addHover(select, li);
 
 				control.addClass('selectBox-menuShowing');
+				if(invert){
+					control.addClass('selectBox-menuShowing-invert');
+				}
 
 				$(document).bind('mousedown.selectBox', function(event) {
 					if( $(event.target).parents().andSelf().hasClass('selectBox-options') ) return;
@@ -432,7 +467,7 @@ if(jQuery) (function($) {
 					
 					if( !settings.menuSpeed ) dispatchCloseEvent();
 					
-					control.removeClass('selectBox-menuShowing');
+					control.removeClass('selectBox-menuShowing').removeClass('selectBox-menuShowing-invert');
 
 				});
 
@@ -443,6 +478,8 @@ if(jQuery) (function($) {
 
 				select = $(select);
 				li = $(li);
+				var $dropDownMenu = li.closest('.selectBox-dropdown-menu');
+				
 				var control = select.data('selectBox-control'),
 					settings = select.data('selectBox-settings');
 
@@ -458,9 +495,9 @@ if(jQuery) (function($) {
 
 						var affectedOptions;
 						if( li.index() > control.data('selectBox-last-selected').index() ) {
-							affectedOptions = li.siblings().slice(control.data('selectBox-last-selected').index(), li.index());
+							affectedOptions = $('li',$dropDownMenu).slice(control.data('selectBox-last-selected').index(), li.index());
 						} else {
-							affectedOptions = li.siblings().slice(li.index(), control.data('selectBox-last-selected').index());
+							affectedOptions = $('li',$dropDownMenu).slice(li.index(), control.data('selectBox-last-selected').index());
 						}
 
 						affectedOptions = affectedOptions.not('.selectBox-optgroup, .selectBox-disabled');
@@ -474,12 +511,12 @@ if(jQuery) (function($) {
 					} else if( (isMac && event.metaKey) || (!isMac && event.ctrlKey) ) {
 						li.toggleClass('selectBox-selected');
 					} else {
-						li.siblings().removeClass('selectBox-selected');
+						$('li',$dropDownMenu).removeClass('selectBox-selected');
 						li.addClass('selectBox-selected');
 					}
 
 				} else {
-					li.siblings().removeClass('selectBox-selected');
+					$('li',$dropDownMenu).removeClass('selectBox-selected');
 					li.addClass('selectBox-selected');
 				}
 
@@ -511,6 +548,15 @@ if(jQuery) (function($) {
 
 			};
 
+			var toggleDrawer = function(select, li) {
+				if(li.hasClass('selectBox-drawer-opened')){
+					li.removeClass('selectBox-drawer-opened').addClass('selectBox-drawer-closed');
+					li.children('ul').hide();
+				}else{
+					li.removeClass('selectBox-drawer-closed').addClass('selectBox-drawer-opened');
+					li.children('ul').show();
+				}
+			}
 
 			var addHover = function(select, li) {
 				select = $(select);
@@ -805,7 +851,7 @@ if(jQuery) (function($) {
 
 				// Generate new options
 				var type = control.hasClass('selectBox-dropdown') ? 'dropdown' : 'inline';
-				options = getOptions(select, type);
+				options = getOptions(select, type, settings);
 				control.data('selectBox-options', options);
 
 				switch( type ) {
